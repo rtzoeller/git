@@ -1527,7 +1527,7 @@ static int match_funcname(struct grep_opt *opt, struct grep_source *gs, char *bo
 
 	if (xecfg) {
 		char buf[1];
-		return xecfg->find_func(bol, eol - bol, buf, 1,
+		return xecfg->find_func(bol, eol - bol, buf, 1, -1,
 					xecfg->find_func_priv) >= 0;
 	}
 

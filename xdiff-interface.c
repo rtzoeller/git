@@ -201,7 +201,7 @@ struct ff_regs {
 };
 
 static long ff_regexp(const char *line, long len,
-		char *buffer, long buffer_size, void *priv)
+		char *buffer, long buffer_size, long max_leading_spaces, void *priv)
 {
 	struct ff_regs *regs = priv;
 	regmatch_t pmatch[2];
@@ -214,6 +214,18 @@ static long ff_regexp(const char *line, long len,
 			len -= 2;
 		else
 			len--;
+	}
+
+	// TODO: Is it faster to check whitespace only after matching the regex?
+	if (max_leading_spaces >= 0) {
+		long leading_spaces;
+		for (leading_spaces = 0; leading_spaces < len
+				&& leading_spaces <= max_leading_spaces
+				&& isspace(line[leading_spaces]); leading_spaces++)
+			;
+
+		if (leading_spaces > max_leading_spaces)
+			return -1;
 	}
 
 	for (i = 0; i < regs->nr; i++) {

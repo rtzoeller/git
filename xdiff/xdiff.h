@@ -97,7 +97,7 @@ typedef struct s_xdemitcb {
 	int (*out_line)(void *, mmbuffer_t *, int);
 } xdemitcb_t;
 
-typedef long (*find_func_t)(const char *line, long line_len, char *buffer, long buffer_size, void *priv);
+typedef long (*find_func_t)(const char *line, long line_len, char *buffer, long buffer_size, long max_leading_spaces, void *priv);
 
 typedef int (*xdl_emit_hunk_consume_func_t)(long start_a, long count_a,
 					    long start_b, long count_b,
