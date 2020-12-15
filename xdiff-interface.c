@@ -198,10 +198,11 @@ struct ff_regs {
 		regex_t re;
 		int negate;
 	} *array;
+	long tab_width;
 };
 
 static long ff_regexp(const char *line, long len,
-		char *buffer, long buffer_size, long max_leading_spaces, void *priv)
+		char *buffer, long buffer_size, long max_visual_indent, void *priv)
 {
 	struct ff_regs *regs = priv;
 	regmatch_t pmatch[2];
@@ -217,14 +218,26 @@ static long ff_regexp(const char *line, long len,
 	}
 
 	// TODO: Is it faster to check whitespace only after matching the regex?
-	if (max_leading_spaces >= 0) {
-		long leading_spaces;
-		for (leading_spaces = 0; leading_spaces < len
-				&& leading_spaces <= max_leading_spaces
-				&& isspace(line[leading_spaces]); leading_spaces++)
-			;
+	// TODO: Fail early if we hit the limit
+	// TODO: Handle other chars like fill_es_indent_data
+	if (max_visual_indent >= 0) {
+		long visual_indent = 0;
+		unsigned int off = 0;
 
-		if (leading_spaces > max_leading_spaces)
+		while (1) {
+			if (line[off] == ' ') {
+				visual_indent++;
+				off++;
+			} else if (line[off] == '\t') {
+				visual_indent += regs->tab_width - (visual_indent % regs->tab_width);
+				while (line[++off] == '\t')
+					visual_indent += regs->tab_width;
+			} else {
+				break;
+			}
+		}
+		
+		if (visual_indent > max_visual_indent)
 			return -1;
 	}
 
@@ -245,7 +258,7 @@ static long ff_regexp(const char *line, long len,
 		result = buffer_size;
 	while (result > 0 && (isspace(line[result - 1])))
 		result--;
-	memcpy(buffer, line, result);
+	memcpy(buffer, line, result); // SIGSEGV, negative buffer_size
 	return result;
 }
 
@@ -283,6 +296,8 @@ void xdiff_set_find_func(xdemitconf_t *xecfg, const char *value, int cflags)
 		free(buffer);
 		value = ep ? ep + 1 : NULL;
 	}
+
+	regs->tab_width = xecfg->tab_width;
 }
 
 void xdiff_clear_find_func(xdemitconf_t *xecfg)

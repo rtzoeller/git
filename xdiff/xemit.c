@@ -95,7 +95,7 @@ xdchange_t *xdl_get_hunk(xdchange_t **xscr, xdemitconf_t const *xecfg)
 }
 
 
-static long def_ff(const char *rec, long len, char *buf, long sz, long max_leading_spaces, void *priv)
+static long def_ff(const char *rec, long len, char *buf, long sz, long max_visual_indent, void *priv)
 {
 	if (len > 0 &&
 			(isalpha((unsigned char)*rec) || /* identifier? */
@@ -112,13 +112,13 @@ static long def_ff(const char *rec, long len, char *buf, long sz, long max_leadi
 }
 
 static long match_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri,
-			   char *buf, long sz, long max_leading_spaces)
+			   char *buf, long sz, long max_visual_indent)
 {
 	const char *rec;
 	long len = xdl_get_rec(xdf, ri, &rec);
 	if (!xecfg->find_func)
-		return def_ff(rec, len, buf, sz, max_leading_spaces, xecfg->find_func_priv);
-	return xecfg->find_func(rec, len, buf, sz, max_leading_spaces, xecfg->find_func_priv);
+		return def_ff(rec, len, buf, sz, max_visual_indent, xecfg->find_func_priv);
+	return xecfg->find_func(rec, len, buf, sz, max_visual_indent, xecfg->find_func_priv);
 }
 
 static int is_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri)
@@ -137,23 +137,30 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 {
 	long l, size, step = (start > limit) ? -1 : 1;
 	char *buf, dummy[1];
-	long leading_spaces;
+	long visual_indent = 0;
 
 	if (start - step >= 0 && start - step < xe->xdf1.nrec) {
 		xrecord_t *first_line = xe->xdf1.recs[start - step];
-
-		for (leading_spaces = 0; first_line->ptr[leading_spaces]
-				&& isspace(first_line->ptr[leading_spaces]); leading_spaces++)
-			;
-	} else {
-		leading_spaces = 0;
+		unsigned int off = 0;
+		while (1) {
+			if (first_line->ptr[off] == ' ') {
+				visual_indent++;
+				off++;
+			} else if (first_line->ptr[off] == '\t') {
+				visual_indent += xecfg->tab_width - (visual_indent % xecfg->tab_width);
+				while (first_line->ptr[++off] == '\t')
+					visual_indent += xecfg->tab_width;
+			} else {
+				break;
+			}
+		}
 	}
 
 	buf = func_line ? func_line->buf : dummy;
 	size = func_line ? sizeof(func_line->buf) : sizeof(dummy);
 
 	for (l = start; l != limit && 0 <= l && l < xe->xdf1.nrec; l += step) {
-		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, leading_spaces - 1);
+		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, visual_indent - 1);
 		if (len >= 0) {
 			if (func_line)
 				func_line->len = len;

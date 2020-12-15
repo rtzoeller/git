@@ -3596,6 +3596,7 @@ static void builtin_diff(const char *name_a,
 		xecfg.flags = XDL_EMIT_FUNCNAMES;
 		if (o->flags.funccontext)
 			xecfg.flags |= XDL_EMIT_FUNCCONTEXT;
+		xecfg.tab_width = ecbdata.ws_rule & WS_TAB_WIDTH_MASK;
 		if (pe)
 			xdiff_set_find_func(&xecfg, pe->pattern, pe->cflags);
 
