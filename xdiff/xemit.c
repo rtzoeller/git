@@ -124,7 +124,7 @@ static long match_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri,
 static int is_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri)
 {
 	char dummy[1];
-	return match_func_rec(xdf, xecfg, ri, dummy, -1, sizeof(dummy)) >= 0;
+	return match_func_rec(xdf, xecfg, ri, dummy, sizeof(dummy), -1) >= 0;
 }
 
 struct func_line {
