@@ -95,7 +95,7 @@ xdchange_t *xdl_get_hunk(xdchange_t **xscr, xdemitconf_t const *xecfg)
 }
 
 
-static long def_ff(const char *rec, long len, char *buf, long sz, long max_visual_indent, void *priv)
+static long def_ff(const char *rec, long len, char *buf, long sz, long* max_visual_indent, void *priv)
 {
 	if (len > 0 &&
 			(isalpha((unsigned char)*rec) || /* identifier? */
@@ -112,7 +112,7 @@ static long def_ff(const char *rec, long len, char *buf, long sz, long max_visua
 }
 
 static long match_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri,
-			   char *buf, long sz, long max_visual_indent)
+			   char *buf, long sz, long* max_visual_indent)
 {
 	const char *rec;
 	long len = xdl_get_rec(xdf, ri, &rec);
@@ -124,7 +124,8 @@ static long match_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri,
 static int is_func_rec(xdfile_t *xdf, xdemitconf_t const *xecfg, long ri)
 {
 	char dummy[1];
-	return match_func_rec(xdf, xecfg, ri, dummy, sizeof(dummy), -1) >= 0;
+	long max_visual_indent = -1;
+	return match_func_rec(xdf, xecfg, ri, dummy, sizeof(dummy), &max_visual_indent) >= 0;
 }
 
 struct func_line {
@@ -139,13 +140,14 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 	char *buf, dummy[1];
 	struct xdl_visual_indent_t vi;
 	long line_number = start - step;
+	long max_visual_indent;
 
 	while (line_number >= 0 && line_number < xe->xdf1.nrec) {
 		xrecord_t *line = xe->xdf1.recs[line_number];
 		xdl_count_visual_indent(line->ptr, xecfg->tab_width, &vi);
 
 		if (isspace(line->ptr[vi.off])) {
-			/* Line is empty/whitespace, try the next line. */
+			/* Line is empty/whitespace only, try the next line. */
 			line_number -= step;
 		} else {
 			break;
@@ -155,8 +157,9 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 	buf = func_line ? func_line->buf : dummy;
 	size = func_line ? sizeof(func_line->buf) : sizeof(dummy);
 
+	max_visual_indent = vi.indent - 1;
 	for (l = start; l != limit && 0 <= l && l < xe->xdf1.nrec; l += step) {
-		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, vi.indent - 1);
+		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, &max_visual_indent);
 		if (len >= 0) {
 			if (func_line)
 				func_line->len = len;

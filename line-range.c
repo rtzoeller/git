@@ -119,7 +119,8 @@ static int match_funcname(xdemitconf_t *xecfg, const char *bol, const char *eol)
 {
 	if (xecfg) {
 		char buf[1];
-		return xecfg->find_func(bol, eol - bol, buf, 1, -1,
+		long max_visual_indent = -1;
+		return xecfg->find_func(bol, eol - bol, buf, 1, &max_visual_indent,
 					xecfg->find_func_priv) >= 0;
 	}
 

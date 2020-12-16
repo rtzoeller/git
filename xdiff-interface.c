@@ -202,7 +202,7 @@ struct ff_regs {
 };
 
 static long ff_regexp(const char *line, long len,
-		char *buffer, long buffer_size, long max_visual_indent, void *priv)
+		char *buffer, long buffer_size, long* max_visual_indent, void *priv)
 {
 	struct ff_regs *regs = priv;
 	regmatch_t pmatch[2];
@@ -219,12 +219,18 @@ static long ff_regexp(const char *line, long len,
 
 	// TODO: Is it faster to check whitespace only after matching the regex?
 	// TODO: Fail early if we hit the limit
-	if (max_visual_indent >= 0) {
+	if (*max_visual_indent >= 0) {
 		struct xdl_visual_indent_t vi;
 		xdl_count_visual_indent(line, regs->tab_width, &vi);
 
-		if (vi.indent > max_visual_indent)
+		if (vi.indent > *max_visual_indent) {
 			return -1;
+		}
+		
+		/* Line has non-whitespace characters, lower the maximum allowed indentation. */
+		if (!isspace(line[vi.off])) {
+			*max_visual_indent = vi.indent - 1;
+		}
 	}
 
 	for (i = 0; i < regs->nr; i++) {
