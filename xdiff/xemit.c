@@ -138,10 +138,12 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 	long l, size, step = (start > limit) ? -1 : 1;
 	char *buf, dummy[1];
 	long visual_indent = 0;
+	long line_number = start - step;
 
-	if (start - step >= 0 && start - step < xe->xdf1.nrec) {
-		xrecord_t *first_line = xe->xdf1.recs[start - step];
+	while (line_number >= 0 && line_number < xe->xdf1.nrec) {
+		xrecord_t *first_line = xe->xdf1.recs[line_number];
 		unsigned int off = 0;
+		visual_indent = 0;
 		while (1) {
 			if (first_line->ptr[off] == ' ') {
 				visual_indent++;
@@ -153,6 +155,13 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 			} else {
 				break;
 			}
+		}
+
+		if (isspace(first_line->ptr[off])) {
+			/* Line is empty/whitespace, try the next line. */
+			line_number -= step;
+		} else {
+			break;
 		}
 	}
 
