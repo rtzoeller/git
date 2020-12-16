@@ -42,6 +42,11 @@ int xdl_emit_hunk_hdr(long s1, long c1, long s2, long c2,
 int xdl_fall_back_diff(xdfenv_t *diff_env, xpparam_t const *xpp,
 		       int line1, int count1, int line2, int count2);
 
-
+struct xdl_visual_indent_t {
+	long indent;
+	unsigned int off;
+};
+void xdl_count_visual_indent(const char* str, unsigned int tab_width,
+			     struct xdl_visual_indent_t* vi);
 
 #endif /* #if !defined(XUTILS_H) */

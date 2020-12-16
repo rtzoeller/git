@@ -432,3 +432,22 @@ int xdl_fall_back_diff(xdfenv_t *diff_env, xpparam_t const *xpp,
 
 	return 0;
 }
+
+// TODO: Handle other chars like fill_es_indent_data
+void xdl_count_visual_indent(const char* str, unsigned int tab_width,
+							 struct xdl_visual_indent_t* vi) {
+	vi->indent = 0;
+	vi->off = 0;
+	while (1) {
+		if (str[vi->off] == ' ') {
+			vi->indent++;
+			vi->off++;
+		} else if (str[vi->off] == '\t') {
+			vi->indent += tab_width - (vi->indent % tab_width);
+			while (str[++vi->off] == '\t')
+				vi->indent += tab_width;
+		} else {
+			break;
+		}
+	}
+}

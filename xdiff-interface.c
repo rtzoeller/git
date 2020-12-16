@@ -219,25 +219,11 @@ static long ff_regexp(const char *line, long len,
 
 	// TODO: Is it faster to check whitespace only after matching the regex?
 	// TODO: Fail early if we hit the limit
-	// TODO: Handle other chars like fill_es_indent_data
 	if (max_visual_indent >= 0) {
-		long visual_indent = 0;
-		unsigned int off = 0;
+		struct xdl_visual_indent_t vi;
+		xdl_count_visual_indent(line, regs->tab_width, &vi);
 
-		while (1) {
-			if (line[off] == ' ') {
-				visual_indent++;
-				off++;
-			} else if (line[off] == '\t') {
-				visual_indent += regs->tab_width - (visual_indent % regs->tab_width);
-				while (line[++off] == '\t')
-					visual_indent += regs->tab_width;
-			} else {
-				break;
-			}
-		}
-		
-		if (visual_indent > max_visual_indent)
+		if (vi.indent > max_visual_indent)
 			return -1;
 	}
 
@@ -258,7 +244,7 @@ static long ff_regexp(const char *line, long len,
 		result = buffer_size;
 	while (result > 0 && (isspace(line[result - 1])))
 		result--;
-	memcpy(buffer, line, result); // SIGSEGV, negative buffer_size
+	memcpy(buffer, line, result);
 	return result;
 }
 

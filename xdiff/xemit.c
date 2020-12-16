@@ -137,27 +137,14 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 {
 	long l, size, step = (start > limit) ? -1 : 1;
 	char *buf, dummy[1];
-	long visual_indent = 0;
+	struct xdl_visual_indent_t vi;
 	long line_number = start - step;
 
 	while (line_number >= 0 && line_number < xe->xdf1.nrec) {
-		xrecord_t *first_line = xe->xdf1.recs[line_number];
-		unsigned int off = 0;
-		visual_indent = 0;
-		while (1) {
-			if (first_line->ptr[off] == ' ') {
-				visual_indent++;
-				off++;
-			} else if (first_line->ptr[off] == '\t') {
-				visual_indent += xecfg->tab_width - (visual_indent % xecfg->tab_width);
-				while (first_line->ptr[++off] == '\t')
-					visual_indent += xecfg->tab_width;
-			} else {
-				break;
-			}
-		}
+		xrecord_t *line = xe->xdf1.recs[line_number];
+		xdl_count_visual_indent(line->ptr, xecfg->tab_width, &vi);
 
-		if (isspace(first_line->ptr[off])) {
+		if (isspace(line->ptr[vi.off])) {
 			/* Line is empty/whitespace, try the next line. */
 			line_number -= step;
 		} else {
@@ -169,7 +156,7 @@ static long get_func_line(xdfenv_t *xe, xdemitconf_t const *xecfg,
 	size = func_line ? sizeof(func_line->buf) : sizeof(dummy);
 
 	for (l = start; l != limit && 0 <= l && l < xe->xdf1.nrec; l += step) {
-		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, visual_indent - 1);
+		long len = match_func_rec(&xe->xdf1, xecfg, l, buf, size, vi.indent - 1);
 		if (len >= 0) {
 			if (func_line)
 				func_line->len = len;
